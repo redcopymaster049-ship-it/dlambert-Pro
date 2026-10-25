@@ -71,7 +71,7 @@
   <!-- Toast Alert Area -->
   <div id="toastContainer" class="toast-container space-y-2"></div>
 
-  <!-- FIREBASE AUTHENTICATION SCREEN (Nakalabas kapag HINDI pa naka-login) -->
+  <!-- FIREBASE AUTHENTICATION SCREEN -->
   <div id="authScreen" class="max-w-md mx-auto px-4 mt-10">
     <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 border border-slate-200">
       <div class="text-center space-y-2">
@@ -120,7 +120,7 @@
     </div>
   </div>
 
-  <!-- MAIN APPLICATION CONTAINER (Nakalabas kapag NAKA-LOGIN na) -->
+  <!-- MAIN APPLICATION CONTAINER -->
   <div id="mainAppContainer" class="hidden">
     <!-- Header Navigation -->
     <header class="max-w-4xl mx-auto px-4 mb-4">
@@ -136,6 +136,12 @@
         </div>
 
         <div class="flex items-center space-x-2">
+          <!-- BAGO: Shoe History Log Menu Button -->
+          <button id="btnOpenShoeHistory" class="btn-press bg-amber-50 hover:bg-amber-100 text-amber-700 p-2.5 rounded-xl border border-amber-200 transition flex items-center space-x-1.5 text-xs font-semibold" title="Shoe Logs">
+            <i class="fa-solid fa-clock-rotate-left text-amber-600"></i>
+            <span class="hidden sm:inline">Shoe Logs</span>
+          </button>
+          
           <button id="btnOpenConfig" class="btn-press bg-slate-100 hover:bg-slate-200 text-slate-700 p-2.5 rounded-xl border border-slate-200 transition flex items-center space-x-1.5 text-xs font-semibold">
             <i class="fa-solid fa-sliders text-amber-600"></i>
             <span class="hidden sm:inline">Settings</span>
@@ -356,6 +362,45 @@
     </div>
   </div>
 
+  <!-- BAGO: Shoe History Modal -->
+  <div id="shoeHistoryModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="glass-card w-full max-w-2xl rounded-2xl p-5 space-y-4 border border-slate-200 shadow-2xl max-h-[90vh] overflow-y-auto bg-white">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="font-extrabold text-base text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> Past Shoe Sessions History
+        </h3>
+        <button id="btnCloseShoeHistoryModal" class="text-slate-400 hover:text-slate-700 text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white max-h-80">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-100 text-slate-600 font-bold sticky top-0 border-b border-slate-200">
+            <tr>
+              <th class="p-2.5">Shoe #</th>
+              <th class="p-2.5">Date & Time</th>
+              <th class="p-2.5 text-center">Hands</th>
+              <th class="p-2.5 text-center">Win Rate</th>
+              <th class="p-2.5 text-right">Max DD</th>
+              <th class="p-2.5 text-right">Shoe PnL</th>
+            </tr>
+          </thead>
+          <tbody id="shoeHistoryTableBody" class="divide-y divide-slate-100 font-mono text-slate-700">
+            <tr>
+              <td colspan="6" class="p-6 text-center text-slate-400 font-sans italic">No past shoe logs recorded yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex justify-between items-center pt-2">
+        <button id="btnClearShoeHistory" class="text-xs text-red-600 hover:text-red-700 font-semibold flex items-center gap-1 bg-red-50 px-3 py-2 rounded-xl border border-red-200">
+          <i class="fa-solid fa-trash-can text-[10px]"></i> Clear History Logs
+        </button>
+        <span class="text-[11px] text-slate-400 font-medium">Automatic archived upon Shoe Reset</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Settings Modal -->
   <div id="configModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="glass-card w-full max-w-md rounded-2xl p-5 space-y-4 border border-slate-200 shadow-2xl max-h-[90vh] overflow-y-auto bg-white">
@@ -532,15 +577,12 @@
     // Firebase Auth State Listener
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        // Naka-login na ang user
         authScreen.classList.add('hidden');
         mainAppContainer.classList.remove('hidden');
         document.getElementById('userEmailDisplay').textContent = user.email || user.displayName || 'Naka-login';
         
-        // Simulan ang Baccarat App logic na nakatali sa User ID
         initBaccaratApp(user.uid);
       } else {
-        // Hindi pa naka-login
         authScreen.classList.remove('hidden');
         mainAppContainer.classList.add('hidden');
       }
@@ -553,6 +595,7 @@
       let state = {
         initialBankroll: 10000,
         currentBankroll: 10000,
+        shoeStartBankroll: 10000, // Dagdag tracking sa simula ng shoe
         baseBet: 100,
         commissionRate: 0.95,
         stepsPerLevel: 1,
@@ -563,6 +606,7 @@
         completedCycles: 0,
         cycleProfitAmount: 0,
         hands: [],
+        shoeLogs: [], // Array ng mga nakaraang shoe sessions
         peakBankroll: 10000,
         maxDrawdown: 0
       };
@@ -580,6 +624,8 @@
           const saved = localStorage.getItem(STORAGE_KEY);
           if (saved) {
             state = Object.assign({}, state, JSON.parse(saved));
+            if (!state.shoeLogs) state.shoeLogs = [];
+            if (!state.shoeStartBankroll) state.shoeStartBankroll = state.currentBankroll;
           }
         } catch(e) {
           console.warn('Could not load state', e);
@@ -729,6 +775,7 @@
         document.getElementById('statPeakBankroll').textContent = `₱${state.peakBankroll.toLocaleString('en-US', {minimumFractionDigits:2})}`;
 
         renderHistoryTable();
+        renderShoeHistoryModalTable();
         drawNativeChart();
       }
 
@@ -777,6 +824,36 @@
         }).join('');
       }
 
+      // BAGO: Function para sa Shoe History Modal Table
+      function renderShoeHistoryModalTable() {
+        const tbody = document.getElementById('shoeHistoryTableBody');
+        if (!state.shoeLogs || state.shoeLogs.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 font-sans italic">No past shoe logs recorded yet.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = state.shoeLogs.slice().reverse().map((shoe, idx) => {
+          const shoeNum = state.shoeLogs.length - idx;
+          const isProfit = shoe.shoePnL >= 0;
+          const pnlClass = isProfit ? 'text-emerald-600 font-bold' : 'text-red-600 font-bold';
+          const pnlText = `${isProfit ? '+' : ''}₱${shoe.shoePnL.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+          const unitText = `${isProfit ? '+' : ''}${(shoe.shoePnL / shoe.baseBet).toFixed(1)}u`;
+
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="p-2.5 font-bold font-mono text-amber-700">Shoe #${shoeNum}</td>
+              <td class="p-2.5 text-[11px] text-slate-500 font-sans">${shoe.timestamp}</td>
+              <td class="p-2.5 text-center font-mono">${shoe.totalHands}</td>
+              <td class="p-2.5 text-center font-mono font-bold">${shoe.winRate}%</td>
+              <td class="p-2.5 text-right font-mono text-red-600">₱${shoe.maxDrawdown.toLocaleString()}</td>
+              <td class="p-2.5 text-right font-mono ${pnlClass}">
+                ${pnlText} <span class="text-[10px] text-slate-400">(${unitText})</span>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
       function drawNativeChart() {
         const canvas = document.getElementById('simpleCanvasChart');
         if (!canvas) return;
@@ -793,8 +870,8 @@
 
         ctx.clearRect(0, 0, w, h);
 
-        const points = [state.initialBankroll];
-        let running = state.initialBankroll;
+        const points = [state.shoeStartBankroll];
+        let running = state.shoeStartBankroll;
         state.hands.forEach(hand => {
           running += hand.profitLoss;
           points.push(running);
@@ -886,6 +963,22 @@
 
       document.getElementById('btnUndoHand').onclick = undoLastHand;
 
+      // Shoe History Modal Controls
+      document.getElementById('btnOpenShoeHistory').onclick = () => {
+        document.getElementById('shoeHistoryModal').classList.remove('hidden');
+      };
+      document.getElementById('btnCloseShoeHistoryModal').onclick = () => {
+        document.getElementById('shoeHistoryModal').classList.add('hidden');
+      };
+      document.getElementById('btnClearShoeHistory').onclick = () => {
+        if (confirm("Kumpirmado mo bang buburahin ang lahat ng nakaraang Shoe Logs?")) {
+          state.shoeLogs = [];
+          safeSaveState();
+          updateUI();
+          showToast('Shoe history logs cleared.', 'info');
+        }
+      };
+
       document.getElementById('btnOpenConfig').onclick = () => {
         document.getElementById('cfgCommission').value = state.commissionRate.toString();
         document.getElementById('cfgCycleTarget').value = state.cycleProfitTargetUnits;
@@ -937,6 +1030,7 @@
         const val = parseFloat(document.getElementById('newBankrollInput').value);
         if (!isNaN(val) && val >= 0) {
           state.currentBankroll = val;
+          state.shoeStartBankroll = val;
           if (state.hands.length === 0) {
             state.initialBankroll = val;
             state.peakBankroll = val;
@@ -948,19 +1042,38 @@
         }
       };
 
+      // IN-UPDATE: Reset Shoe Session Logic (Continues active Bankroll & archives Shoe Log)
       document.getElementById('btnResetSession').onclick = () => {
-        if (confirm("Reset current session? All history will be cleared.")) {
-          state.currentBankroll = state.initialBankroll;
+        if (confirm("I-reset ang shoe session na ito? I-a-archive ang stats ng shoe na ito at MAGPAPATULOY ANG ACTIVE BANKROLL mo sa susunod na shoe.")) {
+          
+          // 1. I-archive ang Shoe Session kapag may nilarong hands
+          if (state.hands.length > 0) {
+            const pCount = state.hands.filter(h => h.type === 'P').length;
+            const bCount = state.hands.filter(h => h.type === 'B').length;
+            const winRateVal = (((pCount + bCount) / state.hands.length) * 100).toFixed(1);
+
+            state.shoeLogs.push({
+              timestamp: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+              totalHands: state.hands.length,
+              winRate: winRateVal,
+              maxDrawdown: state.maxDrawdown,
+              shoePnL: state.currentBankroll - state.shoeStartBankroll,
+              baseBet: state.baseBet
+            });
+          }
+
+          // 2. I-reset lamang ang progression index, cycles, at hands — NGUNIT PANATILIHIN ANG CURRENT BANKROLL
+          state.shoeStartBankroll = state.currentBankroll; // Set ang bagong starting point para sa susunod na shoe
           state.totalStepIndex = 0;
           state.completedCycles = 0;
           state.cycleProfitAmount = 0;
           state.hands = [];
-          state.peakBankroll = state.initialBankroll;
+          state.peakBankroll = state.currentBankroll;
           state.maxDrawdown = 0;
 
           safeSaveState();
           updateUI();
-          showToast('Shoe session reset.', 'info');
+          showToast('Bagong Shoe Session na! Tuloy-tuloy ang iyong Bankroll.', 'success');
         }
       };
 
