@@ -136,7 +136,7 @@
         </div>
 
         <div class="flex items-center space-x-2">
-          <!-- BAGO: Shoe History Log Menu Button -->
+          <!-- Shoe History Log Menu Button -->
           <button id="btnOpenShoeHistory" class="btn-press bg-amber-50 hover:bg-amber-100 text-amber-700 p-2.5 rounded-xl border border-amber-200 transition flex items-center space-x-1.5 text-xs font-semibold" title="Shoe Logs">
             <i class="fa-solid fa-clock-rotate-left text-amber-600"></i>
             <span class="hidden sm:inline">Shoe Logs</span>
@@ -172,7 +172,8 @@
           </div>
           <div class="mt-2">
             <div id="dispBankroll" class="text-lg sm:text-xl font-black font-mono text-slate-900 tracking-tight">₱0.00</div>
-            <div id="dispNetPL" class="text-xs font-bold font-mono mt-0.5 text-slate-500">+₱0.00</div>
+            <!-- Session P&L Display -->
+            <div id="dispSessionPL" class="text-xs font-bold font-mono mt-0.5 text-slate-500">Session: +₱0.00</div>
           </div>
         </div>
 
@@ -292,6 +293,11 @@
           </div>
 
           <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-1.5 text-xs">
+            <!-- BAGO: Hiwalay na Shoe P&L sa Stats Card -->
+            <div class="flex justify-between text-slate-600 border-b border-slate-200 pb-1">
+              <span>Shoe P&L:</span>
+              <span id="statShoePL" class="font-bold text-emerald-600 font-mono">+₱0.00</span>
+            </div>
             <div class="flex justify-between text-slate-600">
               <span>Win Rate:</span>
               <span id="statWinRate" class="font-bold text-slate-900 font-mono">0.0%</span>
@@ -362,7 +368,7 @@
     </div>
   </div>
 
-  <!-- BAGO: Shoe History Modal -->
+  <!-- Shoe History Modal -->
   <div id="shoeHistoryModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="glass-card w-full max-w-2xl rounded-2xl p-5 space-y-4 border border-slate-200 shadow-2xl max-h-[90vh] overflow-y-auto bg-white">
       <div class="flex justify-between items-center border-b border-slate-100 pb-3">
@@ -486,15 +492,12 @@
       onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    // Inii-import ang API Keys mula sa hiwalay na config.js file
     import { firebaseConfig } from "./config.js";
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const googleProvider = new GoogleAuthProvider();
 
-    // Toast Utility
     function showToast(msg, type = 'info') {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
@@ -515,11 +518,9 @@
       }, 3500);
     }
 
-    // --- AUTHENTICATION EVENT HANDLERS ---
     const authScreen = document.getElementById('authScreen');
     const mainAppContainer = document.getElementById('mainAppContainer');
 
-    // Google Sign-In
     document.getElementById('btnGoogleLogin').addEventListener('click', async () => {
       try {
         await signInWithPopup(auth, googleProvider);
@@ -529,7 +530,6 @@
       }
     });
 
-    // Email & Password Auth (Login / Register)
     document.getElementById('emailAuthForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('authEmail').value;
@@ -549,7 +549,6 @@
       }
     });
 
-    // Reset Password
     document.getElementById('btnForgotPassword').addEventListener('click', async () => {
       const email = document.getElementById('authEmail').value;
       if (!email) {
@@ -564,7 +563,6 @@
       }
     });
 
-    // Log Out
     document.getElementById('btnLogout').addEventListener('click', async () => {
       try {
         await signOut(auth);
@@ -574,13 +572,11 @@
       }
     });
 
-    // Firebase Auth State Listener
     onAuthStateChanged(auth, (user) => {
       if (user) {
         authScreen.classList.add('hidden');
         mainAppContainer.classList.remove('hidden');
         document.getElementById('userEmailDisplay').textContent = user.email || user.displayName || 'Naka-login';
-        
         initBaccaratApp(user.uid);
       } else {
         authScreen.classList.remove('hidden');
@@ -588,14 +584,13 @@
       }
     });
 
-    // --- MAIN BACCARAT DASHBOARD LOGIC ---
     function initBaccaratApp(userId) {
       const STORAGE_KEY = `BACCARAT_DALEMBERT_${userId}`;
 
       let state = {
         initialBankroll: 10000,
         currentBankroll: 10000,
-        shoeStartBankroll: 10000, // Dagdag tracking sa simula ng shoe
+        shoeStartBankroll: 10000,
         baseBet: 100,
         commissionRate: 0.95,
         stepsPerLevel: 1,
@@ -606,7 +601,7 @@
         completedCycles: 0,
         cycleProfitAmount: 0,
         hands: [],
-        shoeLogs: [], // Array ng mga nakaraang shoe sessions
+        shoeLogs: [],
         peakBankroll: 10000,
         maxDrawdown: 0
       };
@@ -727,10 +722,17 @@
 
         document.getElementById('dispBankroll').textContent = `₱${state.currentBankroll.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
         
-        const netPL = state.currentBankroll - state.initialBankroll;
-        const netPLElem = document.getElementById('dispNetPL');
-        netPLElem.textContent = `${netPL >= 0 ? '+' : ''}₱${netPL.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
-        netPLElem.className = `text-xs font-bold font-mono mt-0.5 ${netPL >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
+        // 1. Session P&L (Kabuuan mula sa initialBankroll)
+        const sessionPL = state.currentBankroll - state.initialBankroll;
+        const sessionPLElem = document.getElementById('dispSessionPL');
+        sessionPLElem.textContent = `Session: ${sessionPL >= 0 ? '+' : ''}₱${sessionPL.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+        sessionPLElem.className = `text-xs font-bold font-mono mt-0.5 ${sessionPL >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
+
+        // 2. Shoe P&L (Kabuuan para lamang sa kasalukuyang shoe)
+        const shoePL = state.currentBankroll - state.shoeStartBankroll;
+        const shoePLElem = document.getElementById('statShoePL');
+        shoePLElem.textContent = `${shoePL >= 0 ? '+' : ''}₱${shoePL.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+        shoePLElem.className = `font-bold font-mono ${shoePL >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
 
         document.getElementById('baseBetInput').value = state.baseBet;
         document.getElementById('toggleAutoReset').checked = state.autoResetEnabled;
@@ -824,7 +826,6 @@
         }).join('');
       }
 
-      // BAGO: Function para sa Shoe History Modal Table
       function renderShoeHistoryModalTable() {
         const tbody = document.getElementById('shoeHistoryTableBody');
         if (!state.shoeLogs || state.shoeLogs.length === 0) {
@@ -941,7 +942,6 @@
         }
       }
 
-      // Event Listeners
       document.getElementById('btnPWin').onclick = () => recordOutcome('P');
       document.getElementById('btnBWin').onclick = () => recordOutcome('B');
       document.getElementById('btnLoss').onclick = () => recordOutcome('L');
@@ -963,7 +963,6 @@
 
       document.getElementById('btnUndoHand').onclick = undoLastHand;
 
-      // Shoe History Modal Controls
       document.getElementById('btnOpenShoeHistory').onclick = () => {
         document.getElementById('shoeHistoryModal').classList.remove('hidden');
       };
@@ -1042,11 +1041,10 @@
         }
       };
 
-      // IN-UPDATE: Reset Shoe Session Logic (Continues active Bankroll & archives Shoe Log)
+      // Reset Shoe Session Logic
       document.getElementById('btnResetSession').onclick = () => {
-        if (confirm("I-reset ang shoe session na ito? I-a-archive ang stats ng shoe na ito at MAGPAPATULOY ANG ACTIVE BANKROLL mo sa susunod na shoe.")) {
+        if (confirm("I-reset ang shoe session na ito? I-a-archive ang stats ng shoe na ito at magpapatuloy ang active bankroll at session P&L sa susunod na shoe.")) {
           
-          // 1. I-archive ang Shoe Session kapag may nilarong hands
           if (state.hands.length > 0) {
             const pCount = state.hands.filter(h => h.type === 'P').length;
             const bCount = state.hands.filter(h => h.type === 'B').length;
@@ -1062,8 +1060,7 @@
             });
           }
 
-          // 2. I-reset lamang ang progression index, cycles, at hands — NGUNIT PANATILIHIN ANG CURRENT BANKROLL
-          state.shoeStartBankroll = state.currentBankroll; // Set ang bagong starting point para sa susunod na shoe
+          state.shoeStartBankroll = state.currentBankroll; // Dito mare-reset ang shoe P&L sa 0 para sa bagong shoe, habang tuloy-tuloy ang session P&L
           state.totalStepIndex = 0;
           state.completedCycles = 0;
           state.cycleProfitAmount = 0;
@@ -1073,7 +1070,7 @@
 
           safeSaveState();
           updateUI();
-          showToast('Bagong Shoe Session na! Tuloy-tuloy ang iyong Bankroll.', 'success');
+          showToast('Bagong Shoe Session na! Reset ang Shoe P&L habang tuloy ang Session P&L.', 'success');
         }
       };
 
