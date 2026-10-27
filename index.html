@@ -162,7 +162,7 @@
       <!-- Top Key Metrics Cards -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         
-        <!-- Current Bankroll Card -->
+        <!-- Current Bankroll Card (Na-update para isama ang Shoe P&L at Session P&L) -->
         <div class="glass-card rounded-2xl p-3.5 relative overflow-hidden flex flex-col justify-between">
           <div class="flex justify-between items-start">
             <span class="text-[11px] font-bold tracking-wider text-slate-500 uppercase">Bankroll</span>
@@ -170,10 +170,18 @@
               <i class="fa-solid fa-pen-to-square text-[10px]"></i> Edit
             </button>
           </div>
-          <div class="mt-2">
+          <div class="mt-2 space-y-0.5">
             <div id="dispBankroll" class="text-lg sm:text-xl font-black font-mono text-slate-900 tracking-tight">₱0.00</div>
+            <!-- Dito nakalagay ang Shoe P&L sa Bankroll Card -->
+            <div class="text-[11px] font-bold font-mono flex justify-between items-center pt-0.5 border-t border-slate-100">
+              <span class="text-slate-500 font-sans text-[10px]">Shoe P&L:</span>
+              <span id="dispBankrollShoePL" class="text-emerald-600">+₱0.00</span>
+            </div>
             <!-- Session P&L Display -->
-            <div id="dispSessionPL" class="text-xs font-bold font-mono mt-0.5 text-slate-500">Session: +₱0.00</div>
+            <div class="text-[11px] font-bold font-mono flex justify-between items-center">
+              <span class="text-slate-500 font-sans text-[10px]">Session P&L:</span>
+              <span id="dispSessionPL" class="text-slate-600">+₱0.00</span>
+            </div>
           </div>
         </div>
 
@@ -293,11 +301,6 @@
           </div>
 
           <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-1.5 text-xs">
-            <!-- NAKALAGAY NA DITO ANG SHOE P&L -->
-            <div class="flex justify-between text-slate-600 border-b border-slate-200 pb-1">
-              <span class="font-bold text-amber-700">Shoe P&L:</span>
-              <span id="statShoePL" class="font-bold text-emerald-600 font-mono">+₱0.00</span>
-            </div>
             <div class="flex justify-between text-slate-600">
               <span>Win Rate:</span>
               <span id="statWinRate" class="font-bold text-slate-900 font-mono">0.0%</span>
@@ -725,14 +728,14 @@
         // 1. Session P&L (Kabuuan mula sa initialBankroll)
         const sessionPL = state.currentBankroll - state.initialBankroll;
         const sessionPLElem = document.getElementById('dispSessionPL');
-        sessionPLElem.textContent = `Session: ${sessionPL >= 0 ? '+' : ''}₱${sessionPL.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
-        sessionPLElem.className = `text-xs font-bold font-mono mt-0.5 ${sessionPL >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
+        sessionPLElem.textContent = `${sessionPL >= 0 ? '+' : ''}₱${sessionPL.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+        sessionPLElem.className = sessionPL >= 0 ? 'text-emerald-600 font-bold font-mono' : 'text-red-600 font-bold font-mono';
 
-        // 2. Shoe P&L (Kabuuan para lamang sa kasalukuyang shoe)
+        // 2. Shoe P&L (Nakalagay na ngayon sa Bankroll Card)
         const shoePL = state.currentBankroll - state.shoeStartBankroll;
-        const shoePLElem = document.getElementById('statShoePL');
+        const shoePLElem = document.getElementById('dispBankrollShoePL');
         shoePLElem.textContent = `${shoePL >= 0 ? '+' : ''}₱${shoePL.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
-        shoePLElem.className = `font-bold font-mono ${shoePL >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
+        shoePLElem.className = shoePL >= 0 ? 'text-emerald-600 font-bold font-mono' : 'text-red-600 font-bold font-mono';
 
         document.getElementById('baseBetInput').value = state.baseBet;
         document.getElementById('toggleAutoReset').checked = state.autoResetEnabled;
