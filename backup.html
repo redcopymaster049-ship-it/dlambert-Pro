@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Baccarat D'Alembert Pro Manager</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #F8FAFC;
+      color: #1E293B;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    
+    .glass-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .toast-container {
+      position: fixed;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      width: calc(100% - 2rem);
+      max-width: 420px;
+      pointer-events: none;
+    }
+
+    .toast-msg {
+      pointer-events: auto;
+      animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-100%) scale(0.9); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1F5F9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 3px;
+    }
+
+    .btn-press:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-32 pt-2 sm:pt-4">
+
+  <!-- Toast Alert Area -->
+  <div id="toastContainer" class="toast-container space-y-2"></div>
+
+  <!-- FIREBASE AUTHENTICATION SCREEN -->
+  <div id="authScreen" class="max-w-md mx-auto px-4 mt-10">
+    <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 border border-slate-200">
+      <div class="text-center space-y-2">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-amber-500/30">
+          <i class="fa-solid fa-coins"></i>
+        </div>
+        <h1 class="font-extrabold text-xl text-slate-900 tracking-tight">BACCARAT <span class="text-amber-600">PRO</span></h1>
+        <p class="text-xs text-slate-500 font-medium">Mag-sign in para ma-access ang iyong Manager Dashboard</p>
+      </div>
+
+      <!-- Google Login Button -->
+      <button id="btnGoogleLogin" class="w-full btn-press bg-white hover:bg-slate-50 text-slate-700 font-bold p-3.5 rounded-2xl border border-slate-200 shadow-sm transition flex items-center justify-center space-x-3 text-sm">
+        <i class="fa-brands fa-google text-red-500 text-base"></i>
+        <span>Mag-sign in gamit ang Google</span>
+      </button>
+
+      <div class="flex items-center my-4">
+        <div class="flex-grow border-t border-slate-200"></div>
+        <span class="px-3 text-xs text-slate-400 uppercase font-semibold">O kaya Email</span>
+        <div class="flex-grow border-t border-slate-200"></div>
+      </div>
+
+      <!-- Email & Password Form -->
+      <form id="emailAuthForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+          <input type="email" id="authEmail" required placeholder="name@example.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Password</label>
+          <input type="password" id="authPassword" required placeholder="••••••••" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+
+        <div class="flex items-center justify-between text-xs">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="checkbox" id="isSignUpMode" class="rounded text-amber-600 focus:ring-amber-500">
+            <span class="text-slate-600 font-medium">Gumawa ng bagong account</span>
+          </label>
+          <button type="button" id="btnForgotPassword" class="text-amber-600 hover:underline font-semibold">Nakalimutan?</button>
+        </div>
+
+        <button type="submit" id="btnAuthSubmit" class="w-full btn-press bg-amber-500 hover:bg-amber-600 text-white font-black p-3.5 rounded-xl shadow-lg transition text-xs uppercase tracking-wider">
+          Mag-sign In
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APPLICATION CONTAINER -->
+  <div id="mainAppContainer" class="hidden">
+    <!-- Header Navigation -->
+    <header class="max-w-4xl mx-auto px-4 mb-4">
+      <div class="glass-card rounded-2xl p-3 sm:p-4 flex items-center justify-between shadow-xl">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-400 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-amber-500/20">
+            <i class="fa-solid fa-coins"></i>
+          </div>
+          <div>
+            <h1 class="font-extrabold text-base sm:text-lg leading-tight tracking-wide text-slate-900">BACCARAT <span class="text-amber-600">PRO</span></h1>
+            <p id="userEmailDisplay" class="text-[11px] text-slate-500 font-medium">Naka-login</p>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <!-- Shoe History Log Menu Button -->
+          <button id="btnOpenShoeHistory" class="btn-press bg-amber-50 hover:bg-amber-100 text-amber-700 p-2.5 rounded-xl border border-amber-200 transition flex items-center space-x-1.5 text-xs font-semibold" title="Shoe Logs">
+            <i class="fa-solid fa-clock-rotate-left text-amber-600"></i>
+            <span class="hidden sm:inline">Shoe Logs</span>
+          </button>
+          
+          <button id="btnOpenConfig" class="btn-press bg-slate-100 hover:bg-slate-200 text-slate-700 p-2.5 rounded-xl border border-slate-200 transition flex items-center space-x-1.5 text-xs font-semibold">
+            <i class="fa-solid fa-sliders text-amber-600"></i>
+            <span class="hidden sm:inline">Settings</span>
+          </button>
+          <button id="btnResetSession" class="btn-press bg-red-50 hover:bg-red-100 text-red-600 p-2.5 rounded-xl border border-red-200 transition text-xs font-semibold" title="Reset Shoe">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+          <button id="btnLogout" class="btn-press bg-slate-800 hover:bg-slate-900 text-white p-2.5 rounded-xl transition text-xs font-semibold" title="Log Out">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Dashboard Grid -->
+    <main class="max-w-4xl mx-auto px-4 space-y-4">
+
+      <!-- Top Key Metrics Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        
+        <!-- Current Bankroll Card (Na-update para isama ang Shoe P&L at Session P&L) -->
+        <div class="glass-card rounded-2xl p-3.5 relative overflow-hidden flex flex-col justify-between">
+          <div class="flex justify-between items-start">
+            <span class="text-[11px] font-bold tracking-wider text-slate-500 uppercase">Bankroll</span>
+            <button id="btnOpenBankroll" class="text-xs text-amber-700 hover:text-amber-800 font-semibold flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+              <i class="fa-solid fa-pen-to-square text-[10px]"></i> Edit
+            </button>
+          </div>
+          <div class="mt-2 space-y-0.5">
+            <div id="dispBankroll" class="text-lg sm:text-xl font-black font-mono text-slate-900 tracking-tight">₱0.00</div>
+            <!-- Dito nakalagay ang Shoe P&L sa Bankroll Card -->
+            <div class="text-[11px] font-bold font-mono flex justify-between items-center pt-0.5 border-t border-slate-100">
+              <span class="text-slate-500 font-sans text-[10px]">Shoe P&L:</span>
+              <span id="dispBankrollShoePL" class="text-emerald-600">+₱0.00</span>
+            </div>
+            <!-- Session P&L Display -->
+            <div class="text-[11px] font-bold font-mono flex justify-between items-center">
+              <span class="text-slate-500 font-sans text-[10px]">Session P&L:</span>
+              <span id="dispSessionPL" class="text-slate-600">+₱0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Base Bet Input Card -->
+        <div class="glass-card rounded-2xl p-3.5 border-amber-300 bg-amber-50/50">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-[11px] font-bold tracking-wider text-amber-700 uppercase flex items-center gap-1">
+              <i class="fa-solid fa-coins text-[10px]"></i> Base Bet (1u)
+            </span>
+          </div>
+          <div class="relative mt-1">
+            <span class="absolute left-2.5 top-1/2 -translate-y-1/2 font-bold text-amber-600 text-sm">₱</span>
+            <input type="number" id="baseBetInput" min="1" step="10"
+              class="w-full bg-white border border-amber-300 rounded-xl pl-7 pr-2 py-1 text-base font-black font-mono text-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500/50">
+          </div>
+          <div class="text-[10px] text-slate-500 mt-1.5 font-medium flex justify-between">
+            <span>Unit Value</span>
+            <span id="dispBaseBetUnit" class="text-amber-700 font-bold">1u = ₱100</span>
+          </div>
+        </div>
+
+        <!-- Next Bet Card -->
+        <div class="glass-card rounded-2xl p-3.5 border-blue-200 bg-blue-50/50">
+          <span class="text-[11px] font-bold tracking-wider text-blue-600 uppercase flex items-center gap-1">
+            <i class="fa-solid fa-dice text-[10px]"></i> Next Bet
+          </span>
+          <div class="mt-2">
+            <div id="dispNextBet" class="text-xl sm:text-2xl font-black font-mono text-blue-700">₱100.00</div>
+            <div id="dispNextUnit" class="text-xs font-bold text-blue-600 mt-0.5">1x Unit (1u)</div>
+          </div>
+        </div>
+
+        <!-- Cycle Profit Card -->
+        <div class="glass-card rounded-2xl p-3.5 border-emerald-200 bg-emerald-50/50">
+          <div class="flex justify-between items-start">
+            <span class="text-[11px] font-bold tracking-wider text-emerald-700 uppercase">Cycle Profit</span>
+            <span id="dispCompletedCycles" class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full border border-emerald-200">0 Cyc</span>
+          </div>
+          <div class="mt-2">
+            <div id="dispCycleUnits" class="text-xl sm:text-2xl font-black font-mono text-emerald-600">+0.00u</div>
+            <div class="text-[11px] text-slate-500 font-medium mt-0.5 flex justify-between">
+              <span>Target: <span id="dispCycleTarget" class="text-emerald-700 font-bold">+1.00u</span></span>
+              <span id="dispCycleAmt" class="text-slate-600 font-mono">+₱0</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Strategy Status Bar -->
+      <div class="glass-card rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div class="flex items-center space-x-3">
+          <div class="bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 flex items-center space-x-2">
+            <span class="text-slate-500">Level:</span>
+            <span id="dispLevel" class="font-bold font-mono text-amber-600 text-sm">Lvl 1</span>
+          </div>
+          <div class="bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 flex items-center space-x-2">
+            <span class="text-slate-500">Step:</span>
+            <span id="dispStep" class="font-bold font-mono text-blue-600 text-sm">1 / 1</span>
+          </div>
+          <div class="bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 flex items-center space-x-2">
+            <span class="text-slate-500">Mode:</span>
+            <span id="dispMode" class="font-bold text-slate-700">By 1</span>
+          </div>
+        </div>
+
+        <!-- Auto-Reset Toggle -->
+        <div class="flex items-center space-x-2 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+          <span class="text-[11px] font-semibold text-slate-700">Auto-Reset (+1u Target):</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggleAutoReset" class="sr-only peer" checked>
+            <div class="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600"></div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Analytics & Shoe History Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Chart Analytics Card -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-chart-line text-amber-600"></i> Performance Graph
+            </h3>
+            <span id="dispTotalHands" class="text-xs font-mono font-bold text-slate-500">0 Hands</span>
+          </div>
+          <div class="h-44 w-full relative flex items-center justify-center">
+            <canvas id="simpleCanvasChart" class="w-full h-full block"></canvas>
+          </div>
+        </div>
+
+        <!-- Shoe Summary Stats Card -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-chart-pie text-amber-600"></i> Shoe Statistics
+            </h3>
+            <button id="btnUndoHand" class="text-xs text-amber-700 hover:text-amber-800 font-semibold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 transition flex items-center gap-1">
+              <i class="fa-solid fa-rotate-left text-[10px]"></i> Undo Hand
+            </button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-center my-2">
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-2.5">
+              <div id="statPCount" class="text-lg font-black font-mono text-blue-600">0</div>
+              <div class="text-[10px] text-slate-500 font-bold uppercase mt-0.5">Player Wins</div>
+            </div>
+            <div class="bg-red-50 border border-red-200 rounded-xl p-2.5">
+              <div id="statBCount" class="text-lg font-black font-mono text-red-600">0</div>
+              <div class="text-[10px] text-slate-500 font-bold uppercase mt-0.5">Banker Wins</div>
+            </div>
+            <div class="bg-rose-50 border border-rose-200 rounded-xl p-2.5">
+              <div id="statLCount" class="text-lg font-black font-mono text-rose-600">0</div>
+              <div class="text-[10px] text-slate-500 font-bold uppercase mt-0.5">Losses</div>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-1.5 text-xs">
+            <div class="flex justify-between text-slate-600">
+              <span>Win Rate:</span>
+              <span id="statWinRate" class="font-bold text-slate-900 font-mono">0.0%</span>
+            </div>
+            <div class="flex justify-between text-slate-600">
+              <span>Max Drawdown:</span>
+              <span id="statMaxDD" class="font-bold text-red-600 font-mono">₱0.00</span>
+            </div>
+            <div class="flex justify-between text-slate-600">
+              <span>Peak Bankroll:</span>
+              <span id="statPeakBankroll" class="font-bold text-emerald-600 font-mono">₱0.00</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Detailed History Table Card -->
+      <div class="glass-card rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-list-ol text-amber-600"></i> Hand History Log
+          </h3>
+          <button id="btnExportCSV" class="text-xs text-slate-500 hover:text-slate-900 font-medium flex items-center gap-1">
+            <i class="fa-solid fa-download text-[10px]"></i> Export CSV
+          </button>
+        </div>
+
+        <div class="overflow-x-auto max-h-56 rounded-xl border border-slate-200 bg-white">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 text-slate-600 font-bold sticky top-0 border-b border-slate-200">
+              <tr>
+                <th class="p-2.5 text-center">#</th>
+                <th class="p-2.5">Outcome</th>
+                <th class="p-2.5 text-center">Level / Step</th>
+                <th class="p-2.5 text-right">Bet Amount</th>
+                <th class="p-2.5 text-right">Profit / Loss</th>
+                <th class="p-2.5 text-right">Bankroll</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody" class="divide-y divide-slate-100 font-mono text-slate-700">
+              <tr>
+                <td colspan="6" class="p-6 text-center text-slate-400 font-sans italic">No hands recorded in this session yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Sticky Bottom Bar Floating Actions -->
+    <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 shadow-2xl">
+      <div class="max-w-4xl mx-auto grid grid-cols-3 gap-2.5">
+        <button id="btnPWin" class="btn-press bg-gradient-to-b from-blue-500 to-blue-600 text-white p-3 rounded-xl font-black text-center text-xs flex flex-col items-center justify-center shadow-lg shadow-blue-500/20 border border-blue-400">
+          <span class="tracking-wide">P WIN</span>
+          <span id="stickyBadgeP" class="text-[11px] mt-0.5 opacity-95 font-mono font-bold text-blue-100">+₱100</span>
+        </button>
+        <button id="btnBWin" class="btn-press bg-gradient-to-b from-red-500 to-red-600 text-white p-3 rounded-xl font-black text-center text-xs flex flex-col items-center justify-center shadow-lg shadow-red-500/20 border border-red-400">
+          <span class="tracking-wide">B WIN</span>
+          <span id="stickyBadgeB" class="text-[11px] mt-0.5 opacity-95 font-mono font-bold text-red-100">+₱95</span>
+        </button>
+        <button id="btnLoss" class="btn-press bg-gradient-to-b from-slate-200 to-slate-300 text-slate-800 p-3 rounded-xl font-black text-center text-xs flex flex-col items-center justify-center shadow-lg shadow-slate-200 border border-slate-300">
+          <span class="tracking-wide text-slate-800">LOSS</span>
+          <span id="stickyBadgeL" class="text-[11px] mt-0.5 opacity-95 font-mono font-bold text-red-600">-₱100</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shoe History Modal -->
+  <div id="shoeHistoryModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="glass-card w-full max-w-2xl rounded-2xl p-5 space-y-4 border border-slate-200 shadow-2xl max-h-[90vh] overflow-y-auto bg-white">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="font-extrabold text-base text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> Past Shoe Sessions History
+        </h3>
+        <button id="btnCloseShoeHistoryModal" class="text-slate-400 hover:text-slate-700 text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white max-h-80">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-100 text-slate-600 font-bold sticky top-0 border-b border-slate-200">
+            <tr>
+              <th class="p-2.5">Shoe #</th>
+              <th class="p-2.5">Date & Time</th>
+              <th class="p-2.5 text-center">Hands</th>
+              <th class="p-2.5 text-center">Win Rate</th>
+              <th class="p-2.5 text-right">Max DD</th>
+              <th class="p-2.5 text-right">Shoe PnL</th>
+            </tr>
+          </thead>
+          <tbody id="shoeHistoryTableBody" class="divide-y divide-slate-100 font-mono text-slate-700">
+            <tr>
+              <td colspan="6" class="p-6 text-center text-slate-400 font-sans italic">No past shoe logs recorded yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex justify-between items-center pt-2">
+        <button id="btnClearShoeHistory" class="text-xs text-red-600 hover:text-red-700 font-semibold flex items-center gap-1 bg-red-50 px-3 py-2 rounded-xl border border-red-200">
+          <i class="fa-solid fa-trash-can text-[10px]"></i> Clear History Logs
+        </button>
+        <span class="text-[11px] text-slate-400 font-medium">Automatic archived upon Shoe Reset</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="configModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="glass-card w-full max-w-md rounded-2xl p-5 space-y-4 border border-slate-200 shadow-2xl max-h-[90vh] overflow-y-auto bg-white">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="font-extrabold text-base text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-amber-600"></i> Strategy Configuration
+        </h3>
+        <button id="btnCloseConfigModal" class="text-slate-400 hover:text-slate-700 text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Banker Commission Payout</label>
+          <select id="cfgCommission" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 font-medium focus:ring-2 focus:ring-amber-500">
+            <option value="0.95">Standard 5% Commission (0.95x Payout)</option>
+            <option value="1.00">No Commission / Super 6 (1.00x Payout)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Step Repetition Mode (By N Steps)</label>
+          <div class="grid grid-cols-3 gap-2 mb-2">
+            <button type="button" id="btnStep1" class="p-2 rounded-xl font-bold border border-slate-200 bg-slate-50 text-slate-600">By 1</button>
+            <button type="button" id="btnStep2" class="p-2 rounded-xl font-bold border border-slate-200 bg-slate-50 text-slate-600">By 2</button>
+            <button type="button" id="btnStepCustom" class="p-2 rounded-xl font-bold border border-slate-200 bg-slate-50 text-slate-600">Custom</button>
+          </div>
+          <div id="customStepWrapper" class="hidden mt-2">
+            <label class="block font-medium text-slate-500 mb-1">Steps Per Level:</label>
+            <input type="number" id="cfgCustomSteps" min="1" max="10" value="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-slate-800 font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Cycle Profit Reset Target (Units)</label>
+          <input type="number" id="cfgCycleTarget" step="0.5" min="0.5" value="1" 
+            class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-emerald-700 font-mono font-bold focus:ring-2 focus:ring-amber-500">
+          <p class="text-[10px] text-slate-400 mt-1">Default is 1.0u (+1 Unit net profit triggers automatic progression reset to Level 1).</p>
+        </div>
+      </div>
+
+      <div class="pt-2 flex gap-2">
+        <button id="btnSaveConfig" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-black p-3 rounded-xl shadow-lg transition text-xs uppercase tracking-wider">
+          Save Settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Bankroll Modal -->
+  <div id="bankrollModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="glass-card w-full max-w-sm rounded-2xl p-5 space-y-4 border border-slate-200 shadow-2xl bg-white">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="font-extrabold text-base text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-wallet text-amber-600"></i> Update Bankroll
+        </h3>
+        <button id="btnCloseBankrollModal" class="text-slate-400 hover:text-slate-700 text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div>
+        <label class="block font-bold text-xs text-slate-700 mb-1.5">Enter Active Current Bankroll (₱)</label>
+        <input type="number" id="newBankrollInput" step="100" class="w-full bg-slate-50 border border-amber-300 rounded-xl p-3 text-xl font-mono font-black text-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500">
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button id="btnSaveBankroll" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-black p-3 rounded-xl transition text-xs uppercase tracking-wider">
+          Update Balance
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIREBASE INTEGRATION & APPLICATION SCRIPT -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getAuth, 
+      signInWithPopup, 
+      GoogleAuthProvider, 
+      signInWithEmailAndPassword, 
+      createUserWithEmailAndPassword, 
+      sendPasswordResetEmail,
+      signOut, 
+      onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    import { firebaseConfig } from "./config.js";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const googleProvider = new GoogleAuthProvider();
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let bgClass = 'bg-white text-slate-800 border-slate-200 shadow-lg';
+      if (type === 'success') bgClass = 'bg-emerald-50 text-emerald-800 border-emerald-200 shadow-lg';
+      if (type === 'error') bgClass = 'bg-red-50 text-red-800 border-red-200 shadow-lg';
+
+      toast.className = `toast-msg p-3 rounded-xl border ${bgClass} text-xs font-semibold flex items-center space-x-2`;
+      toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check text-emerald-600' : (type === 'error' ? 'fa-circle-exclamation text-red-600' : 'fa-circle-info text-amber-600')}"></i><span>${msg}</span>`;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    const authScreen = document.getElementById('authScreen');
+    const mainAppContainer = document.getElementById('mainAppContainer');
+
+    document.getElementById('btnGoogleLogin').addEventListener('click', async () => {
+      try {
+        await signInWithPopup(auth, googleProvider);
+        showToast('Tagumpay ang pag-login gamit ang Google!', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    });
+
+    document.getElementById('emailAuthForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
+      const isSignUp = document.getElementById('isSignUpMode').checked;
+
+      try {
+        if (isSignUp) {
+          await createUserWithEmailAndPassword(auth, email, password);
+          showToast('Matagumpay na nagawa ang account!', 'success');
+        } else {
+          await signInWithEmailAndPassword(auth, email, password);
+          showToast('Matagumpay na naka-login!', 'success');
+        }
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    });
+
+    document.getElementById('btnForgotPassword').addEventListener('click', async () => {
+      const email = document.getElementById('authEmail').value;
+      if (!email) {
+        showToast('Ilagay muna ang iyong Email Address bago i-click ito.', 'error');
+        return;
+      }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showToast('Ipinadala na ang link sa pag-reset ng password sa iyong email.', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    });
+
+    document.getElementById('btnLogout').addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+        showToast('Naka-logout na.', 'info');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        authScreen.classList.add('hidden');
+        mainAppContainer.classList.remove('hidden');
+        document.getElementById('userEmailDisplay').textContent = user.email || user.displayName || 'Naka-login';
+        initBaccaratApp(user.uid);
+      } else {
+        authScreen.classList.remove('hidden');
+        mainAppContainer.classList.add('hidden');
+      }
+    });
+
+    function initBaccaratApp(userId) {
+      const STORAGE_KEY = `BACCARAT_DALEMBERT_${userId}`;
+
+      let state = {
+        initialBankroll: 10000,
+        currentBankroll: 10000,
+        shoeStartBankroll: 10000,
+        baseBet: 100,
+        commissionRate: 0.95,
+        stepsPerLevel: 1,
+        autoResetEnabled: true,
+        cycleProfitTargetUnits: 1.0,
+
+        totalStepIndex: 0,
+        completedCycles: 0,
+        cycleProfitAmount: 0,
+        hands: [],
+        shoeLogs: [],
+        peakBankroll: 10000,
+        maxDrawdown: 0
+      };
+
+      function safeSaveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch(e) {
+          console.warn('LocalStorage error', e);
+        }
+      }
+
+      function safeLoadState() {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            state = Object.assign({}, state, JSON.parse(saved));
+            if (!state.shoeLogs) state.shoeLogs = [];
+            if (!state.shoeStartBankroll) state.shoeStartBankroll = state.currentBankroll;
+          }
+        } catch(e) {
+          console.warn('Could not load state', e);
+        }
+      }
+
+      safeLoadState();
+
+      function getUnitMultiplier(stepIndex) {
+        const repetition = state.stepsPerLevel || 1;
+        return Math.floor(stepIndex / repetition) + 1;
+      }
+
+      function getCurrentBetAmount() {
+        const unitMult = getUnitMultiplier(state.totalStepIndex);
+        return unitMult * state.baseBet;
+      }
+
+      function recordOutcome(type) {
+        const currentBet = getCurrentBetAmount();
+        let profitLoss = 0;
+
+        if (type === 'P') profitLoss = currentBet;
+        else if (type === 'B') profitLoss = currentBet * state.commissionRate;
+        else if (type === 'L') profitLoss = -currentBet;
+
+        state.currentBankroll += profitLoss;
+        state.cycleProfitAmount += profitLoss;
+
+        if (state.currentBankroll > state.peakBankroll) {
+          state.peakBankroll = state.currentBankroll;
+        }
+        const currentDD = state.peakBankroll - state.currentBankroll;
+        if (currentDD > state.maxDrawdown) {
+          state.maxDrawdown = currentDD;
+        }
+
+        const cycleTargetAmount = state.cycleProfitTargetUnits * state.baseBet;
+        let cycleResetTriggered = false;
+
+        if (state.autoResetEnabled && state.cycleProfitAmount >= cycleTargetAmount) {
+          cycleResetTriggered = true;
+          state.completedCycles++;
+          state.cycleProfitAmount = 0;
+          state.totalStepIndex = 0;
+          showToast(`🎉 Cycle Target (+${state.cycleProfitTargetUnits}u) Reached! Resetting level.`, 'success');
+        } else {
+          if (type === 'P' || type === 'B') {
+            if (state.totalStepIndex > 0) state.totalStepIndex--;
+          } else if (type === 'L') {
+            state.totalStepIndex++;
+          }
+        }
+
+        const currentLvl = getUnitMultiplier(state.totalStepIndex);
+        const subStep = (state.totalStepIndex % state.stepsPerLevel) + 1;
+
+        state.hands.push({
+          id: Date.now(),
+          type: type,
+          level: currentLvl,
+          step: subStep,
+          betAmount: currentBet,
+          profitLoss: profitLoss,
+          bankrollAfter: state.currentBankroll,
+          cycleReset: cycleResetTriggered
+        });
+
+        safeSaveState();
+        updateUI();
+      }
+
+      function undoLastHand() {
+        if (state.hands.length === 0) {
+          showToast('No hands to undo.', 'info');
+          return;
+        }
+
+        const lastHand = state.hands.pop();
+        state.currentBankroll -= lastHand.profitLoss;
+        state.cycleProfitAmount -= lastHand.profitLoss;
+
+        if (state.hands.length > 0) {
+          state.totalStepIndex = Math.max(0, state.totalStepIndex - (lastHand.type === 'L' ? 1 : -1));
+        } else {
+          state.totalStepIndex = 0;
+          state.cycleProfitAmount = 0;
+        }
+
+        safeSaveState();
+        updateUI();
+        showToast('Last hand undone.', 'info');
+      }
+
+      function updateUI() {
+        const currentBet = getCurrentBetAmount();
+        const currentUnitMult = getUnitMultiplier(state.totalStepIndex);
+        const currentSubStep = (state.totalStepIndex % state.stepsPerLevel) + 1;
+
+        document.getElementById('dispBankroll').textContent = `₱${state.currentBankroll.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+        
+        // 1. Session P&L (Kabuuan mula sa initialBankroll)
+        const sessionPL = state.currentBankroll - state.initialBankroll;
+        const sessionPLElem = document.getElementById('dispSessionPL');
+        sessionPLElem.textContent = `${sessionPL >= 0 ? '+' : ''}₱${sessionPL.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+        sessionPLElem.className = sessionPL >= 0 ? 'text-emerald-600 font-bold font-mono' : 'text-red-600 font-bold font-mono';
+
+        // 2. Shoe P&L (Nakalagay na ngayon sa Bankroll Card)
+        const shoePL = state.currentBankroll - state.shoeStartBankroll;
+        const shoePLElem = document.getElementById('dispBankrollShoePL');
+        shoePLElem.textContent = `${shoePL >= 0 ? '+' : ''}₱${shoePL.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+        shoePLElem.className = shoePL >= 0 ? 'text-emerald-600 font-bold font-mono' : 'text-red-600 font-bold font-mono';
+
+        document.getElementById('baseBetInput').value = state.baseBet;
+        document.getElementById('toggleAutoReset').checked = state.autoResetEnabled;
+        document.getElementById('dispBaseBetUnit').textContent = `1u = ₱${state.baseBet.toLocaleString()}`;
+
+        document.getElementById('dispNextBet').textContent = `₱${currentBet.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+        document.getElementById('dispNextUnit').textContent = `${currentUnitMult}x Unit (${currentUnitMult}u)`;
+
+        const cycleUnits = state.cycleProfitAmount / state.baseBet;
+        const cycleUnitsElem = document.getElementById('dispCycleUnits');
+        cycleUnitsElem.textContent = `${cycleUnits >= 0 ? '+' : ''}${cycleUnits.toFixed(2)}u`;
+        cycleUnitsElem.className = `text-xl sm:text-2xl font-black font-mono ${cycleUnits >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
+        document.getElementById('dispCycleTarget').textContent = `+${state.cycleProfitTargetUnits.toFixed(2)}u`;
+        document.getElementById('dispCycleAmt').textContent = `${state.cycleProfitAmount >= 0 ? '+' : ''}₱${Math.round(state.cycleProfitAmount)}`;
+        document.getElementById('dispCompletedCycles').textContent = `${state.completedCycles} Cyc`;
+
+        document.getElementById('dispLevel').textContent = `Lvl ${currentUnitMult} (${currentUnitMult}u)`;
+        document.getElementById('dispStep').textContent = `${currentSubStep} / ${state.stepsPerLevel}`;
+        document.getElementById('dispMode').textContent = state.stepsPerLevel === 1 ? 'By 1' : (state.stepsPerLevel === 2 ? 'By 2' : `By ${state.stepsPerLevel}`);
+
+        const pWinAmt = currentBet;
+        const bWinAmt = currentBet * state.commissionRate;
+        const lossAmt = currentBet;
+
+        document.getElementById('stickyBadgeP').textContent = `+₱${Math.round(pWinAmt).toLocaleString()}`;
+        document.getElementById('stickyBadgeB').textContent = `+₱${Math.round(bWinAmt).toLocaleString()}`;
+        document.getElementById('stickyBadgeL').textContent = `-₱${Math.round(lossAmt).toLocaleString()}`;
+
+        const pCount = state.hands.filter(h => h.type === 'P').length;
+        const bCount = state.hands.filter(h => h.type === 'B').length;
+        const lCount = state.hands.filter(h => h.type === 'L').length;
+        const totalHands = state.hands.length;
+
+        document.getElementById('statPCount').textContent = pCount;
+        document.getElementById('statBCount').textContent = bCount;
+        document.getElementById('statLCount').textContent = lCount;
+        document.getElementById('dispTotalHands').textContent = `${totalHands} Hands`;
+
+        const winRate = totalHands > 0 ? (((pCount + bCount) / totalHands) * 100).toFixed(1) : '0.0';
+        document.getElementById('statWinRate').textContent = `${winRate}%`;
+        document.getElementById('statMaxDD').textContent = `₱${state.maxDrawdown.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+        document.getElementById('statPeakBankroll').textContent = `₱${state.peakBankroll.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+
+        renderHistoryTable();
+        renderShoeHistoryModalTable();
+        drawNativeChart();
+      }
+
+      function renderHistoryTable() {
+        const tbody = document.getElementById('historyTableBody');
+        if (state.hands.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 font-sans italic">No hands recorded in this session yet.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = state.hands.slice().reverse().map((hand, idx) => {
+          const handNum = state.hands.length - idx;
+          let badgeClass = '';
+          let typeLabel = '';
+
+          if (hand.type === 'P') {
+            badgeClass = 'bg-blue-100 text-blue-700 border-blue-200';
+            typeLabel = 'Player Win';
+          } else if (hand.type === 'B') {
+            badgeClass = 'bg-red-100 text-red-700 border-red-200';
+            typeLabel = 'Banker Win';
+          } else {
+            badgeClass = 'bg-rose-100 text-rose-700 border-rose-200';
+            typeLabel = 'Loss';
+          }
+
+          const isProfit = hand.profitLoss >= 0;
+          const plText = `${isProfit ? '+' : ''}₱${hand.profitLoss.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+          const plClass = isProfit ? 'text-emerald-600 font-bold' : 'text-red-600 font-bold';
+
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="p-2.5 text-center text-slate-500 font-mono">#${handNum}</td>
+              <td class="p-2.5">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border ${badgeClass}">
+                  ${typeLabel}
+                </span>
+                ${hand.cycleReset ? '<span class="ml-1 text-[9px] bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded border border-emerald-200 font-sans">Reset</span>' : ''}
+              </td>
+              <td class="p-2.5 text-center font-mono">Lvl ${hand.level} <span class="text-slate-400 text-[10px]">(${hand.step})</span></td>
+              <td class="p-2.5 text-right font-mono">₱${hand.betAmount.toLocaleString()}</td>
+              <td class="p-2.5 text-right font-mono ${plClass}">${plText}</td>
+              <td class="p-2.5 text-right font-mono text-slate-700">₱${hand.bankrollAfter.toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      function renderShoeHistoryModalTable() {
+        const tbody = document.getElementById('shoeHistoryTableBody');
+        if (!state.shoeLogs || state.shoeLogs.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 font-sans italic">No past shoe logs recorded yet.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = state.shoeLogs.slice().reverse().map((shoe, idx) => {
+          const shoeNum = state.shoeLogs.length - idx;
+          const isProfit = shoe.shoePnL >= 0;
+          const pnlClass = isProfit ? 'text-emerald-600 font-bold' : 'text-red-600 font-bold';
+          const pnlText = `${isProfit ? '+' : ''}₱${shoe.shoePnL.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+          const unitText = `${isProfit ? '+' : ''}${(shoe.shoePnL / shoe.baseBet).toFixed(1)}u`;
+
+          return `
+            <tr class="hover:bg-slate-50 transition">
+              <td class="p-2.5 font-bold font-mono text-amber-700">Shoe #${shoeNum}</td>
+              <td class="p-2.5 text-[11px] text-slate-500 font-sans">${shoe.timestamp}</td>
+              <td class="p-2.5 text-center font-mono">${shoe.totalHands}</td>
+              <td class="p-2.5 text-center font-mono font-bold">${shoe.winRate}%</td>
+              <td class="p-2.5 text-right font-mono text-red-600">₱${shoe.maxDrawdown.toLocaleString()}</td>
+              <td class="p-2.5 text-right font-mono ${pnlClass}">
+                ${pnlText} <span class="text-[10px] text-slate-400">(${unitText})</span>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      function drawNativeChart() {
+        const canvas = document.getElementById('simpleCanvasChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+
+        const w = rect.width;
+        const h = rect.height;
+
+        ctx.clearRect(0, 0, w, h);
+
+        const points = [state.shoeStartBankroll];
+        let running = state.shoeStartBankroll;
+        state.hands.forEach(hand => {
+          running += hand.profitLoss;
+          points.push(running);
+        });
+
+        if (points.length === 1) {
+          ctx.fillStyle = '#94A3B8';
+          ctx.font = '12px "Plus Jakarta Sans", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('Play hands to render trend graph', w / 2, h / 2);
+          return;
+        }
+
+        const minVal = Math.min(...points);
+        const maxVal = Math.max(...points);
+        const range = (maxVal - minVal) === 0 ? 1 : (maxVal - minVal);
+
+        const padding = 20;
+        const plotW = w - (padding * 2);
+        const plotH = h - (padding * 2);
+
+        ctx.beginPath();
+        ctx.strokeStyle = '#2563EB';
+        ctx.lineWidth = 2.5;
+
+        points.forEach((val, i) => {
+          const x = padding + (i / (points.length - 1)) * plotW;
+          const y = h - padding - ((val - minVal) / range) * plotH;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        ctx.lineTo(w - padding, h - padding);
+        ctx.lineTo(padding, h - padding);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(37, 99, 235, 0.08)';
+        ctx.fill();
+      }
+
+      function setStepMode(val) {
+        const btn1 = document.getElementById('btnStep1');
+        const btn2 = document.getElementById('btnStep2');
+        const btnC = document.getElementById('btnStepCustom');
+        const wrap = document.getElementById('customStepWrapper');
+
+        [btn1, btn2, btnC].forEach(b => b.className = 'p-2 rounded-xl font-bold border border-slate-200 bg-slate-50 text-slate-500');
+
+        if (val === 1) {
+          btn1.className = 'p-2 rounded-xl font-bold border border-amber-500 bg-amber-50 text-amber-700';
+          wrap.classList.add('hidden');
+          btn1.dataset.selected = "true";
+          btn2.dataset.selected = "false";
+          btnC.dataset.selected = "false";
+        } else if (val === 2) {
+          btn2.className = 'p-2 rounded-xl font-bold border border-amber-500 bg-amber-50 text-amber-700';
+          wrap.classList.add('hidden');
+          btn1.dataset.selected = "false";
+          btn2.dataset.selected = "true";
+          btnC.dataset.selected = "false";
+        } else {
+          btnC.className = 'p-2 rounded-xl font-bold border border-amber-500 bg-amber-50 text-amber-700';
+          wrap.classList.remove('hidden');
+          btn1.dataset.selected = "false";
+          btn2.dataset.selected = "false";
+          btnC.dataset.selected = "true";
+        }
+      }
+
+      document.getElementById('btnPWin').onclick = () => recordOutcome('P');
+      document.getElementById('btnBWin').onclick = () => recordOutcome('B');
+      document.getElementById('btnLoss').onclick = () => recordOutcome('L');
+
+      document.getElementById('baseBetInput').onchange = (e) => {
+        const num = parseFloat(e.target.value);
+        if (!isNaN(num) && num > 0) {
+          state.baseBet = num;
+          safeSaveState();
+          updateUI();
+        }
+      };
+
+      document.getElementById('toggleAutoReset').onchange = (e) => {
+        state.autoResetEnabled = e.target.checked;
+        safeSaveState();
+        updateUI();
+      };
+
+      document.getElementById('btnUndoHand').onclick = undoLastHand;
+
+      document.getElementById('btnOpenShoeHistory').onclick = () => {
+        document.getElementById('shoeHistoryModal').classList.remove('hidden');
+      };
+      document.getElementById('btnCloseShoeHistoryModal').onclick = () => {
+        document.getElementById('shoeHistoryModal').classList.add('hidden');
+      };
+      document.getElementById('btnClearShoeHistory').onclick = () => {
+        if (confirm("Kumpirmado mo bang buburahin ang lahat ng nakaraang Shoe Logs?")) {
+          state.shoeLogs = [];
+          safeSaveState();
+          updateUI();
+          showToast('Shoe history logs cleared.', 'info');
+        }
+      };
+
+      document.getElementById('btnOpenConfig').onclick = () => {
+        document.getElementById('cfgCommission').value = state.commissionRate.toString();
+        document.getElementById('cfgCycleTarget').value = state.cycleProfitTargetUnits;
+
+        if (state.stepsPerLevel === 1) setStepMode(1);
+        else if (state.stepsPerLevel === 2) setStepMode(2);
+        else {
+          setStepMode('custom');
+          document.getElementById('cfgCustomSteps').value = state.stepsPerLevel;
+        }
+
+        document.getElementById('configModal').classList.remove('hidden');
+      };
+
+      document.getElementById('btnCloseConfigModal').onclick = () => {
+        document.getElementById('configModal').classList.add('hidden');
+      };
+
+      document.getElementById('btnStep1').onclick = () => setStepMode(1);
+      document.getElementById('btnStep2').onclick = () => setStepMode(2);
+      document.getElementById('btnStepCustom').onclick = () => setStepMode('custom');
+
+      document.getElementById('btnSaveConfig').onclick = () => {
+        state.commissionRate = parseFloat(document.getElementById('cfgCommission').value);
+        state.cycleProfitTargetUnits = parseFloat(document.getElementById('cfgCycleTarget').value) || 1.0;
+
+        const btn1 = document.getElementById('btnStep1');
+        const btn2 = document.getElementById('btnStep2');
+        if (btn1.dataset.selected === "true") state.stepsPerLevel = 1;
+        else if (btn2.dataset.selected === "true") state.stepsPerLevel = 2;
+        else state.stepsPerLevel = parseInt(document.getElementById('cfgCustomSteps').value) || 1;
+
+        safeSaveState();
+        updateUI();
+        document.getElementById('configModal').classList.add('hidden');
+        showToast('Settings saved!', 'success');
+      };
+
+      document.getElementById('btnOpenBankroll').onclick = () => {
+        document.getElementById('newBankrollInput').value = state.currentBankroll;
+        document.getElementById('bankrollModal').classList.remove('hidden');
+      };
+
+      document.getElementById('btnCloseBankrollModal').onclick = () => {
+        document.getElementById('bankrollModal').classList.add('hidden');
+      };
+
+      document.getElementById('btnSaveBankroll').onclick = () => {
+        const val = parseFloat(document.getElementById('newBankrollInput').value);
+        if (!isNaN(val) && val >= 0) {
+          state.currentBankroll = val;
+          state.shoeStartBankroll = val;
+          if (state.hands.length === 0) {
+            state.initialBankroll = val;
+            state.peakBankroll = val;
+          }
+          safeSaveState();
+          updateUI();
+          document.getElementById('bankrollModal').classList.add('hidden');
+          showToast('Bankroll updated.', 'success');
+        }
+      };
+
+      // Reset Shoe Session Logic
+      document.getElementById('btnResetSession').onclick = () => {
+        if (confirm("I-reset ang shoe session na ito? I-a-archive ang stats ng shoe na ito at magpapatuloy ang active bankroll at session P&L sa susunod na shoe.")) {
+          
+          if (state.hands.length > 0) {
+            const pCount = state.hands.filter(h => h.type === 'P').length;
+            const bCount = state.hands.filter(h => h.type === 'B').length;
+            const winRateVal = (((pCount + bCount) / state.hands.length) * 100).toFixed(1);
+
+            state.shoeLogs.push({
+              timestamp: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+              totalHands: state.hands.length,
+              winRate: winRateVal,
+              maxDrawdown: state.maxDrawdown,
+              shoePnL: state.currentBankroll - state.shoeStartBankroll,
+              baseBet: state.baseBet
+            });
+          }
+
+          state.shoeStartBankroll = state.currentBankroll; // Dito mare-reset ang shoe P&L sa 0 para sa bagong shoe, habang tuloy-tuloy ang session P&L
+          state.totalStepIndex = 0;
+          state.completedCycles = 0;
+          state.cycleProfitAmount = 0;
+          state.hands = [];
+          state.peakBankroll = state.currentBankroll;
+          state.maxDrawdown = 0;
+
+          safeSaveState();
+          updateUI();
+          showToast('Bagong Shoe Session na! Reset ang Shoe P&L habang tuloy ang Session P&L.', 'success');
+        }
+      };
+
+      document.getElementById('btnExportCSV').onclick = () => {
+        if (state.hands.length === 0) {
+          showToast('No history data to export.', 'info');
+          return;
+        }
+        let csv = 'Hand,#,Outcome,Level,Step,BetAmount,ProfitLoss,BankrollAfter\n';
+        state.hands.forEach((h, i) => {
+          csv += `${i + 1},${h.type},${h.level},${h.step},${h.betAmount},${h.profitLoss},${h.bankrollAfter}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('href', url);
+        a.setAttribute('download', `baccarat_session_${Date.now()}.csv`);
+        a.click();
+      };
+
+      window.onresize = drawNativeChart;
+      updateUI();
+    }
+  </script>
+</body>
+</html>
